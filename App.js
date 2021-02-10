@@ -16,7 +16,7 @@ import { StyleSheet,
 class App extends React.Component {
 
   _hubConnection = new HubConnectionBuilder()
-    .withUrl("https://localhost:5001/chatHub")
+    .withUrl("http://45.66.156.160:8443/chatHub")
     .configureLogging(LogLevel.Debug)
     .build();
 
@@ -26,6 +26,7 @@ class App extends React.Component {
       super();
       this.state = {
         messages: [],
+        inputMessage:{}
       };
     }
 
@@ -50,13 +51,28 @@ class App extends React.Component {
 
     render(){
 
-      const msgInputHandler=(enteredMessage)=>{
+      const msgInputHandler=(text)=>{
         var json={
+          "id":0,
           "from":"local",
-          "to":"self",
-          "message":enteredMessage
+         
+          "message":text
         }
-        this.setState({messages:[...this.state.messages,json]})
+        this.setState({inputMessage:[this.state.inputMessage,json]})
+      }
+
+      const msgSendHandler=()=>{
+        console.log(this.state.inputMessage)
+        //this.setState({messages:[...this.state.messages,this.state.inputMessage[1]]})
+        const requestOptions = {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(this.state.inputMessage[1])
+      };
+      fetch('http://45.66.156.160:8443/weatherforecast/write', requestOptions)
+          .then(response => response.json())
+          //.then(data => this.setState({ postId: data.id }));
+        
       }
 
 
@@ -73,9 +89,6 @@ class App extends React.Component {
               <Text >
                 From : {itemData.item.from}
               </Text>
-              <Text >
-                To: {itemData.item.to}
-              </Text>
               <Text>
                 Message:{itemData.item.message}
               </Text>
@@ -83,12 +96,13 @@ class App extends React.Component {
             }
           />
           <View>
+          
             <TextInput
               placeholder="Write here..."
               onChangeText={msgInputHandler}
-              value={this.enteredMessage}
+              value={this.text}
             />
-            <Button title="send" onPress={msgInputHandler}/>
+            <Button title="send" onPress={msgSendHandler}/>
           </View>
           <StatusBar style="auto" />
         </View>
