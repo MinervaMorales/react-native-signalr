@@ -3,6 +3,7 @@ import React, {useState} from 'react';
 
 import {HubConnectionBuilder, LogLevel, HttpTransportType} from '@aspnet/signalr';
 import {Message} from './Message';
+import Input from './components/Input';
 
 import { StyleSheet, 
   Text, 
@@ -16,7 +17,8 @@ import { StyleSheet,
 class App extends React.Component {
 
   _hubConnection = new HubConnectionBuilder()
-    .withUrl("http://45.66.156.160:8443/chatHub")
+    .withUrl("https://localhost:5001/chatHub")
+    //.withUrl("http://45.66.156.160:8443/chatHub")
     .configureLogging(LogLevel.Debug)
     .build();
 
@@ -25,8 +27,8 @@ class App extends React.Component {
     constructor(){
       super();
       this.state = {
-        messages: [],
-        inputMessage:{}
+        messages: []
+        
       };
     }
 
@@ -37,9 +39,8 @@ class App extends React.Component {
       this._hubConnection.start().then(a => {
         console.log('Connected rafa');
       });
-      this._hubConnection.on('ReceiveMessage', message => {
+      this._hubConnection.on('SendAsync', message => {
         console.log(message);
-        
         this.setState({messages:[...this.state.messages,message]})
         
       });
@@ -51,25 +52,23 @@ class App extends React.Component {
 
     render(){
 
-      const msgInputHandler=(text)=>{
+      
+
+      const msgSendHandler=(msg)=>{
+        console.log(this.state.inputMessage)
+        //this.setState({messages:[...this.state.messages,this.state.inputMessage[1]]})
         var json={
           "id":0,
           "from":"local",
-         
-          "message":text
-        }
-        this.setState({inputMessage:[this.state.inputMessage,json]})
-      }
-
-      const msgSendHandler=()=>{
-        console.log(this.state.inputMessage)
-        //this.setState({messages:[...this.state.messages,this.state.inputMessage[1]]})
+          "message":msg
+          }
         const requestOptions = {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(this.state.inputMessage[1])
+          body: JSON.stringify(json)
       };
-      fetch('http://45.66.156.160:8443/weatherforecast/write', requestOptions)
+      fetch('https://localhost:5001/api/Chat/sendBroadCast', requestOptions)
+     //fetch('http://45.66.156.160:8443/weatherforecast/write', requestOptions)
           .then(response => response.json())
           //.then(data => this.setState({ postId: data.id }));
         
@@ -78,32 +77,26 @@ class App extends React.Component {
 
       return (
         <View style={styles.container}>
-          
-          <FlatList
-            data={this.state.messages}
-            keyExtractor={(item, id) => {
-            return  id.toString();
-            }}
-            renderItem={itemData=>
-            <View>
-              <Text >
-                From : {itemData.item.from}
-              </Text>
-              <Text>
-                Message:{itemData.item.message}
-              </Text>
-            </View>
-            }
-          />
-          <View>
-          
-            <TextInput
-              placeholder="Write here..."
-              onChangeText={msgInputHandler}
-              value={this.text}
+          <View style={styles.containerLists}>
+            <FlatList
+              
+              data={this.state.messages}
+              keyExtractor={(item, id) => {
+              return  id.toString();
+              }}
+              renderItem={itemData=>
+              <View style={styles.listItems}>
+                <Text >
+                  From : {itemData.item.from}
+                </Text>
+                <Text>
+                  Message:{itemData.item.message}
+                </Text>
+              </View>
+              }
             />
-            <Button title="send" onPress={msgSendHandler}/>
           </View>
+          <Input addMessage={msgSendHandler}/>
           <StatusBar style="auto" />
         </View>
       );
@@ -112,12 +105,33 @@ class App extends React.Component {
 }
 
 const styles = StyleSheet.create({
-  container: {
+  container:{
+    flex:1
+  },
+  
+  containerLists: {
     flex: 1,
     backgroundColor: '#fff',
     alignItems: 'center',
     justifyContent: 'center',
+    borderColor:'black',
+    borderWidth:1,
+    borderRadius:10
   },
+  button:{
+    width:'100%'
+  },
+  
+ 
+  listItems:{
+    flex:2,
+    padding:10,
+    width:'100%',
+    marginVertical:10,
+    backgroundColor:"yellow",
+    borderRadius:10
+    
+  }
 });
 
 
