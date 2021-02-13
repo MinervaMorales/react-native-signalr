@@ -2,7 +2,7 @@ import { StatusBar } from 'expo-status-bar';
 import React, {useState} from 'react';
 
 import {HubConnectionBuilder, LogLevel, HttpTransportType} from '@aspnet/signalr';
-import {Message} from './Message';
+
 import Input from './components/Input';
 
 import { StyleSheet, 
@@ -12,92 +12,153 @@ import { StyleSheet,
   TextInput,
   ScrollView,
   FlatList} from 'react-native';
+import Message from './components/Message';
+import InputConnect from './components/InputConnect';
+import InputServer from './components/InputServer';
 
 
 class App extends React.Component {
-
-  _hubConnection = new HubConnectionBuilder()
-    .withUrl("https://localhost:5001/chatHub")
-    //.withUrl("http://45.66.156.160:8443/chatHub")
-    .configureLogging(LogLevel.Debug)
-    .build();
+  
+ 
+ 
+ 
+  
 
     
 
     constructor(){
       super();
       this.state = {
-        messages: []
+        messages: [],
+        privateMessages:[],
+        hosts:[]
         
       };
     }
 
-    componentDidMount(){
-      
+    
+
+     
+    
       
 
-      this._hubConnection.start().then(a => {
+    render(){
+
+      const connect=(host)=>{
+        console.log(host)
+        let _hubConnection = new HubConnectionBuilder()
+        .withUrl("https://localhost:5001/chatHub?username="+host)
+        //.withUrl("http://45.66.156.160:8443/chatHub")
+        .configureLogging(LogLevel.Debug)
+        .build();
+      
+
+      _hubConnection.start().then(a => {
         console.log('Connected rafa');
       });
-      this._hubConnection.on('SendAsync', message => {
+      _hubConnection.on('ReceiveMessage', (message) => {
         console.log(message);
         this.setState({messages:[...this.state.messages,message]})
         
       });
 
-      this._hubConnection.on('ReceiveStores', stores => {
-        console.log(stores);
+      _hubConnection.on('GetConnectedUsers', (host) => {
+      var cont=0;
+       this.state.hosts.forEach(element=>{
+         if(element.message==host.message){
+           cont++;
+         }
+       })
+       if(cont==0){
+         
+        this.setState({hosts:[...this.state.hosts,host]})
+       }
+       console.log(this.state.hosts)
+        
       });
-    }
 
-    render(){
+      _hubConnection.on('sendToPrivateMessage', (message) => {
+        console.log(message)
+        this.setState({privateMessages:[...this.state.privateMessages,message]})
+      });
+
 
       
+    }
+     
 
       const msgSendHandler=(msg)=>{
-        console.log(this.state.inputMessage)
-        //this.setState({messages:[...this.state.messages,this.state.inputMessage[1]]})
-        var json={
+       var json={
           "id":0,
           "from":"local",
+          "connectionId":"a@a.com",
           "message":msg
           }
         const requestOptions = {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(json)
-      };
-      fetch('https://localhost:5001/api/Chat/sendBroadCast', requestOptions)
-     //fetch('http://45.66.156.160:8443/weatherforecast/write', requestOptions)
+        };
+        fetch('https://localhost:5001/api/Chat/sendBroadCast', requestOptions)
+        //fetch('http://45.66.156.160:8443/weatherforecast/write', requestOptions)
           .then(response => response.json())
-          //.then(data => this.setState({ postId: data.id }));
-        
-      }
+         
+        }
+
+
+      const msgPrivateSendHandler=(msg)=>{
+        var json={
+           "id":0,
+           "from":"local",
+           "message":msg
+           }
+         const requestOptions = {
+           method: 'POST',
+           headers: { 'Content-Type': 'application/json' },
+           body: JSON.stringify(json)
+         };
+         fetch('https://localhost:5001/api/Chat/sendPrivate', requestOptions)
+         //fetch('http://45.66.156.160:8443/weatherforecast/write', requestOptions)
+           .then(response => response.json())
+       }
+
+
+       
+
+         const getConnections=()=>{
+          let _hubConnection = new HubConnectionBuilder()
+          _hubConnection.invoke('GetConnectedUsers')
+         }
+
+           
+           
+       
+
 
 
       return (
         <View style={styles.container}>
-          <View style={styles.containerLists}>
-            <FlatList
-              
-              data={this.state.messages}
-              keyExtractor={(item, id) => {
-              return  id.toString();
-              }}
-              renderItem={itemData=>
-              <View style={styles.listItems}>
-                <Text >
-                  From : {itemData.item.from}
-                </Text>
-                <Text>
-                  Message:{itemData.item.message}
-                </Text>
-              </View>
-              }
-            />
+          <View style={styles.containerChat}>
+            <View style={styles.window}>
+              <Message data={this.state.messages}/>
+              <Input addMessage={msgSendHandler}/>
+              <StatusBar style="auto" />
+            </View>
+            <View style={styles.window}>
+            <Message data={this.state.privateMessages}/>
+              <Input addMessage={msgPrivateSendHandler}/>
+              <StatusBar style="auto" />
+            </View>
           </View>
-          <Input addMessage={msgSendHandler}/>
-          <StatusBar style="auto" />
+          <View>
+            <InputConnect addHost={connect}/>
+          </View>
+          <View>
+            <InputServer/>
+          </View>
+          <View>
+            <Button onPress={getConnections}/>
+          </View>
         </View>
       );
     }
@@ -105,32 +166,16 @@ class App extends React.Component {
 }
 
 const styles = StyleSheet.create({
-  container:{
-    flex:1
-  },
-  
-  containerLists: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderColor:'black',
-    borderWidth:1,
-    borderRadius:10
-  },
-  button:{
-    width:'100%'
-  },
-  
- 
-  listItems:{
+  containerChat:{
     flex:2,
-    padding:10,
-    width:'100%',
-    marginVertical:10,
-    backgroundColor:"yellow",
-    borderRadius:10
-    
+    flexDirection: 'row'
+  },
+  window:{
+    flex:2
+  },
+  container:{
+    flex:1,
+    flexDirection: 'column'
   }
 });
 
