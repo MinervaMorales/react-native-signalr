@@ -13,6 +13,7 @@ import { StyleSheet,
   ScrollView,
   FlatList} from 'react-native';
 import Message from './components/Message';
+import PrivateMessage from './components/PrivateMessage';
 import InputConnect from './components/InputConnect';
 import InputServer from './components/InputServer';
 
@@ -31,7 +32,8 @@ class App extends React.Component {
       this.state = {
         messages: [],
         privateMessages:[],
-        hosts:[]
+        hosts:[],
+        to:''
         
       };
     }
@@ -45,7 +47,7 @@ class App extends React.Component {
     render(){
 
       const connect=(host)=>{
-        console.log(host)
+        
         let _hubConnection = new HubConnectionBuilder()
         .withUrl("https://localhost:5001/chatHub?username="+host)
         //.withUrl("http://45.66.156.160:8443/chatHub")
@@ -55,6 +57,7 @@ class App extends React.Component {
 
       _hubConnection.start().then(a => {
         console.log('Connected rafa');
+        _hubConnection.invoke("GetConnectedUsers")
       });
       _hubConnection.on('ReceiveMessage', (message) => {
         console.log(message);
@@ -64,7 +67,8 @@ class App extends React.Component {
 
       _hubConnection.on('GetConnectedUsers', (host) => {
       var cont=0;
-       this.state.hosts.forEach(element=>{
+      console.log(host) 
+      this.state.hosts.forEach(element=>{
          if(element.message==host.message){
            cont++;
          }
@@ -78,7 +82,7 @@ class App extends React.Component {
       });
 
       _hubConnection.on('sendToPrivateMessage', (message) => {
-        console.log(message)
+        console.log('privado')
         this.setState({privateMessages:[...this.state.privateMessages,message]})
       });
 
@@ -109,9 +113,10 @@ class App extends React.Component {
       const msgPrivateSendHandler=(msg)=>{
         var json={
            "id":0,
-           "from":"local",
+           "to":this.state.to,
            "message":msg
            }
+           console.log(json)
          const requestOptions = {
            method: 'POST',
            headers: { 'Content-Type': 'application/json' },
@@ -123,12 +128,14 @@ class App extends React.Component {
        }
 
 
+       const toMessage=(value)=>{
+         console.log('pasa por aca')
+        this.setState({to:value})
+       }
+
+
        
 
-         const getConnections=()=>{
-          let _hubConnection = new HubConnectionBuilder()
-          _hubConnection.invoke('GetConnectedUsers')
-         }
 
            
            
@@ -145,7 +152,7 @@ class App extends React.Component {
               <StatusBar style="auto" />
             </View>
             <View style={styles.window}>
-            <Message data={this.state.privateMessages}/>
+            <PrivateMessage data={this.state.privateMessages}/>
               <Input addMessage={msgPrivateSendHandler}/>
               <StatusBar style="auto" />
             </View>
@@ -153,12 +160,16 @@ class App extends React.Component {
           <View>
             <InputConnect addHost={connect}/>
           </View>
-          <View>
-            <InputServer/>
-          </View>
-          <View>
-            <Button onPress={getConnections}/>
-          </View>
+          <View style={styles.inputContainer}>
+            <TextInput
+              style={styles.input}
+              placeholder="Put your serverName here..."
+              onChangeText={toMessage}
+              //value={enteredText}
+            />
+            
+        </View>
+          
         </View>
       );
     }
@@ -176,6 +187,19 @@ const styles = StyleSheet.create({
   container:{
     flex:1,
     flexDirection: 'column'
+  },
+  input:{
+    width:'100%',
+    borderColor: 'black',
+    borderWidth:1,
+    padding:10
+    
+     },
+inputContainer:{
+    
+    flexDirection: 'row', 
+    justifyContent:'space-between', 
+    alignContent:'center'
   }
 });
 

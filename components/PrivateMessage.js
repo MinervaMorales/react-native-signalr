@@ -1,4 +1,5 @@
 
+
 import React, {useState} from 'react';
 
 
@@ -12,9 +13,7 @@ import { StyleSheet,
   FlatList} from 'react-native';
 
 
-
-
-const Message=props=>{
+const PrivateMessage=props=>{
     return(
 
         <View style={styles.containerLists}>
@@ -37,9 +36,7 @@ const Message=props=>{
     />
   </View>
     );
-    
 }
-
 
 const styles = StyleSheet.create({
     containerLists: {
@@ -62,5 +59,4 @@ const styles = StyleSheet.create({
       }
   });
 
-
-export default Message; 
+  export default PrivateMessage;

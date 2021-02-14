@@ -6,13 +6,20 @@ import { StyleSheet,
   TextInput} from 'react-native';
 
 const InputServer=props=>{
+    
+    const [enteredText,setEnteredText]=useState('')
+    const serverInputHandler=(enteredText)=>{
+        console.log(enteredText)
+        setEnteredText(enteredText)
+    }
+    
     return(
         <View style={styles.inputContainer}>
             <TextInput
               style={styles.input}
               placeholder="Put your serverName here..."
-             // onChangeText={msgInputHandler}
-             // value={enteredText}
+              onChangeText={serverInputHandler}
+              value={enteredText}
             />
             
         </View>
